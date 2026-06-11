@@ -1630,3 +1630,17 @@ function setupMockBackend() {
         }
     };
 }
+
+// Binds QWebChannel initialization on window load
+window.onload = function() {
+    if (typeof qt !== "undefined" && qt.webChannelTransport) {
+        new QWebChannel(qt.webChannelTransport, function(channel) {
+            window.backend = channel.objects.backend;
+            console.log("QWebChannel connected successfully.");
+        });
+    } else {
+        console.warn("Qt WebChannel transport not found. Running mock backend.");
+        setupMockBackend();
+    }
+};
+
