@@ -174,8 +174,21 @@ class BackendBridge(QObject):
         elif action == "get_inventory_logs":
             tab = payload.get("tab")
             if tab in ['available', 'sold']:
-                logs = Imei.get_all(tab)
-                return {"success": True, "logs": logs}
+                raw_logs = Imei.get_all(tab)
+                normalized_logs = []
+                for r in raw_logs:
+                    log_date = r['added_date'] if tab == 'available' else (r['sold_date'] or r['added_date'])
+                    reason = "Available Device" if tab == 'available' else f"Sold via Invoice {r['sale_id']}"
+                    normalized_logs.append({
+                        "date": log_date,
+                        "brand": r['brand'],
+                        "model": r['model'],
+                        "type": r['status'],  # 'available' or 'sold'
+                        "quantity": 1,
+                        "reason": reason,
+                        "imei": r['imei']
+                    })
+                return {"success": True, "logs": normalized_logs}
             else:
                 logs = Product.get_inventory_log()
                 return {"success": True, "logs": logs}
