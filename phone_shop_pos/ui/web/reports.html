@@ -1,0 +1,109 @@
+<!-- ui/web/reports.html -->
+<div class="animated-page">
+    <div class="page-header">
+        <div class="page-title">
+            <h1>Sales & Profit Reports</h1>
+            <p>Financial ledger summaries, transactions logging, and spreadsheet exports</p>
+        </div>
+        <div style="display: flex; gap: 8px;" id="reports-range-selector">
+            <button class="btn btn-primary" data-range="today" id="report-range-today">Today</button>
+            <button class="btn btn-secondary" data-range="month" id="report-range-month">This Month</button>
+            <button class="btn btn-secondary" data-range="all" id="report-range-all">All-Time</button>
+        </div>
+    </div>
+
+    <!-- 1. Gross metrics cards -->
+    <div class="metrics-grid" style="margin-top: 10px;">
+        <div class="glass-card metric-card success">
+            <span class="metric-label">Gross Revenue</span>
+            <span class="metric-value" id="report-gross-revenue">Rs. 0.00</span>
+            <div class="metric-trend" style="color: var(--success);">
+                <span>● Overall turnover</span>
+            </div>
+        </div>
+        <div class="glass-card metric-card">
+            <span class="metric-label">Cost of Goods (COGS)</span>
+            <span class="metric-value" id="report-cogs">Rs. 0.00</span>
+            <div class="metric-trend" style="color: var(--text-muted);">
+                <span>● Cost of inventory sold</span>
+            </div>
+        </div>
+        <div class="glass-card metric-card success">
+            <span class="metric-label">Net Profit Margin</span>
+            <span class="metric-value" id="report-net-profit">Rs. 0.00</span>
+            <div class="metric-trend" style="color: var(--success);">
+                <span>▲ Earnings margin</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Split views: Sales Logs & Top Selling Products -->
+    <div class="charts-grid" style="margin-top: 10px;">
+        <!-- Left: Sales Logs -->
+        <div class="glass-card" style="display: flex; flex-direction: column; height: 400px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <span style="font-weight: 700; font-size: 1.1rem;">Sales Invoice Logs</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Double-click a row to reprint receipt</span>
+            </div>
+            
+            <div class="table-responsive" style="flex-grow: 1; overflow-y: auto;">
+                <table class="data-table" id="report-sales-table">
+                    <thead>
+                        <tr>
+                            <th>Invoice</th>
+                            <th>Date</th>
+                            <th>Customer</th>
+                            <th>Total</th>
+                            <th>Profit</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Injected via app.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right: Top Selling Products -->
+        <div class="glass-card" style="display: flex; flex-direction: column; height: 400px;">
+            <div style="font-weight: 700; font-size: 1.1rem; margin-bottom: 15px;">
+                Top Selling Products
+            </div>
+            
+            <div class="table-responsive" style="flex-grow: 1; overflow-y: auto;">
+                <table class="data-table" id="report-bestsellers-table">
+                    <thead>
+                        <tr>
+                            <th>Product Model</th>
+                            <th>Units Sold</th>
+                            <th>Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Injected via app.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. Export tools -->
+    <div class="glass-card" style="margin-top: 10px; padding: 20px;">
+        <span style="font-weight: 700; font-size: 1.1rem; display: block; margin-bottom: 12px;">Excel Exporters Console</span>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 20px;">Export localized SQLite snapshot data straight to standard openpyxl formatted excel spreadsheets.</p>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="btn btn-secondary" id="export-sales-btn">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export Sales History (.xlsx)
+            </button>
+            <button class="btn btn-secondary" id="export-inventory-btn">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export Inventory Catalog (.xlsx)
+            </button>
+            <button class="btn btn-secondary" id="export-customers-btn">
+                <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export Customers Registry (.xlsx)
+            </button>
+        </div>
+    </div>
+</div>

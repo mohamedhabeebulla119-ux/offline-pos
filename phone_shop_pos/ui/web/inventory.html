@@ -1,0 +1,120 @@
+<!-- ui/web/inventory.html -->
+<div class="animated-page">
+    <div class="page-header">
+        <div class="page-title">
+            <h1>Stock Adjustments Ledger</h1>
+            <p>Adjust device inventory stock levels, register serial IMEIs, and audit logs</p>
+        </div>
+    </div>
+
+    <!-- Layout Splits: Left Adjustment Form / Right Logs Grid -->
+    <div class="pos-container">
+        <!-- LEFT: Adjustment Action forms -->
+        <div class="pos-left">
+            <!-- IMEI Registration Card -->
+            <div class="glass-card" style="padding: 22px;">
+                <span style="font-weight: 700; font-size: 1.15rem; display: block; margin-bottom: 15px; color: var(--accent);">
+                    Register Unique Device IMEI
+                </span>
+                
+                <form id="imei-register-form">
+                    <div class="form-group">
+                        <label for="imei-product-select">Select Phone Template Model *</label>
+                        <select id="imei-product-select" class="form-control" required>
+                            <option value="">-- Select Phone Model --</option>
+                            <!-- Injected via app.js -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="imei-code-input">IMEI / Hardware Serial Code *</label>
+                        <input type="text" id="imei-code-input" class="form-control" placeholder="Scan or enter 15-digit IMEI code..." required autocomplete="off">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="margin-top: 5px;">
+                        Register Device IMEI
+                    </button>
+                </form>
+            </div>
+
+            <!-- Manual Stock Adjustments Card -->
+            <div class="glass-card" style="padding: 22px;">
+                <span style="font-weight: 700; font-size: 1.15rem; display: block; margin-bottom: 15px; color: var(--warning);">
+                    Manual Quantity Adjustments (LEDGER)
+                </span>
+                
+                <form id="stock-adjustment-form">
+                    <div class="form-group">
+                        <label for="adjust-scan-input">Scan Barcode / SKU</label>
+                        <input type="text" id="adjust-scan-input" class="form-control" placeholder="Scan barcode to select product instantly..." autocomplete="off">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="adjust-product-select">Or Select Inventory Product *</label>
+                        <select id="adjust-product-select" class="form-control" required>
+                            <option value="">-- Choose Product --</option>
+                            <!-- Injected via app.js -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="adjust-action-select">Adjustment Mode *</label>
+                            <select id="adjust-action-select" class="form-control" required>
+                                <option value="in">STOCK IN (+)</option>
+                                <option value="out">STOCK OUT (-)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="adjust-qty-input">Quantity *</label>
+                            <input type="number" id="adjust-qty-input" class="form-control" min="1" value="1" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="adjust-reason-select">Adjustment Reason *</label>
+                        <select id="adjust-reason-select" class="form-control" required>
+                            <option value="Purchase Order">Purchase Order</option>
+                            <option value="Supplier Return">Supplier Return</option>
+                            <option value="Damaged Device">Damaged Device</option>
+                            <option value="Stock Correction">Stock Correction</option>
+                            <option value="Other / Demo">Other / Demo</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-warning" style="margin-top: 5px;">
+                        Commit Stock Ledger Adjustment
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- RIGHT: Adjustment Ledger Audit Logs -->
+        <div class="glass-card" style="display: flex; flex-direction: column; height: 100%;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <span style="font-weight: 700; font-size: 1.1rem;">Inventory Transactions Logs</span>
+                <div style="display: flex; gap: 6px;">
+                    <button class="btn btn-secondary btn-icon-only" id="filter-imei-avail-btn" title="Show Available IMEIs" style="padding: 6px 12px; font-size: 0.8rem; border-color: var(--success); color: var(--success);">Avail</button>
+                    <button class="btn btn-secondary btn-icon-only" id="filter-imei-sold-btn" title="Show Sold IMEIs" style="padding: 6px 12px; font-size: 0.8rem; border-color: var(--danger); color: var(--danger);">Sold</button>
+                </div>
+            </div>
+            
+            <div class="table-responsive" style="flex-grow: 1; overflow-y: auto;">
+                <table class="data-table" id="inventory-logs-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Product Model</th>
+                            <th>Type</th>
+                            <th>Qty</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Injected via app.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

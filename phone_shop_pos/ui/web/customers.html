@@ -1,0 +1,38 @@
+<!-- ui/web/customers.html -->
+<div class="animated-page">
+    <div class="page-header">
+        <div class="page-title">
+            <h1>Customer Registry Profiles</h1>
+            <p>Customer accounts index, purchase history, and device warranty lookup</p>
+        </div>
+        <button class="btn btn-primary" id="add-customer-modal-btn">
+            + Register Customer
+        </button>
+    </div>
+
+    <!-- Search Directory Filters -->
+    <div class="glass-card" style="padding: 15px; display: flex; justify-content: space-between; align-items: center; gap: 15px;">
+        <input type="text" id="customer-search-input" class="form-control" placeholder="Search customer name, phone number, address..." style="flex-grow: 1; max-width: 500px;">
+        <button class="btn btn-secondary" id="customer-reset-btn">Reset Filters</button>
+    </div>
+
+    <!-- Customers Table Card -->
+    <div class="glass-card" style="flex-grow: 1;">
+        <div class="table-responsive">
+            <table class="data-table" id="customers-table">
+                <thead>
+                    <tr>
+                        <th>Full Name</th>
+                        <th>Phone Number</th>
+                        <th>Billing Address</th>
+                        <th>Date Registered</th>
+                        <th style="width: 250px; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Injected via app.js -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

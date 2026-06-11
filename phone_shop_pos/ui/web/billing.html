@@ -1,0 +1,105 @@
+<!-- ui/web/billing.html -->
+<div class="animated-page">
+    <div class="page-header">
+        <div class="page-title">
+            <h1>Billing Register / POS</h1>
+            <p>Scan barcode, add accessories or phones, and print invoices</p>
+        </div>
+    </div>
+
+    <div class="pos-container">
+        <!-- LEFT: Product Search and Catalog Selection -->
+        <div class="pos-left">
+            <!-- Scan Input -->
+            <div class="glass-card" style="padding: 18px;">
+                <form id="pos-scan-form" style="display: flex; gap: 12px; align-items: flex-end;">
+                    <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
+                        <label for="pos-scan-input">Scan Barcode / SKU / IMEI</label>
+                        <input type="text" id="pos-scan-input" class="form-control" placeholder="Direct scan or type barcode here..." required autofocus autocomplete="off">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="height: 43px;">
+                        Add Code
+                    </button>
+                </form>
+            </div>
+
+            <!-- Product Catalog Table -->
+            <div class="glass-card" style="flex-grow: 1; display: flex; flex-direction: column;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <span style="font-weight: 700; font-size: 1.1rem;">Available Inventory Catalog</span>
+                    <input type="text" id="pos-catalog-search" class="form-control" placeholder="Search catalog items..." style="width: 220px; padding: 6px 12px; font-size: 0.85rem;">
+                </div>
+                
+                <div class="table-responsive" style="flex-grow: 1; overflow-y: auto;">
+                    <table class="data-table" id="pos-catalog-table">
+                        <thead>
+                            <tr>
+                                <th>SKU / Barcode</th>
+                                <th>Product Model</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Injected via app.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: Shopping Cart and Checkout Total -->
+        <div class="glass-card pos-right">
+            <div style="display: flex; flex-direction: column; height: 100%;">
+                <!-- Customer Selection -->
+                <div style="display: flex; gap: 8px; margin-bottom: 15px; align-items: center;">
+                    <select id="pos-customer-select" class="form-control" style="flex-grow: 1; height: 40px; padding: 8px;">
+                        <option value="">-- Guest Customer --</option>
+                        <!-- Injected via app.js -->
+                    </select>
+                    <button class="btn btn-secondary" id="pos-add-customer-btn" style="height: 40px; padding: 0 12px;" title="Register New Customer">
+                        + New
+                    </button>
+                </div>
+
+                <div style="font-weight: 700; font-size: 1rem; margin-bottom: 8px; color: var(--text-muted);">
+                    Checkout Cart Items
+                </div>
+
+                <!-- Cart List -->
+                <div class="cart-items-container" id="pos-cart-list">
+                    <!-- Injected via app.js -->
+                    <div style="color: var(--text-muted); text-align: center; padding-top: 50px;" id="cart-empty-message">
+                        Cart is currently empty. Double click a catalog item or scan code to add.
+                    </div>
+                </div>
+
+                <!-- Checkout Totals Panel -->
+                <div class="pos-totals-card">
+                    <div class="total-row">
+                        <span>Subtotal</span>
+                        <span id="pos-subtotal">Rs. 0.00</span>
+                    </div>
+                    <div class="total-row">
+                        <span>Discount (Rs.)</span>
+                        <input type="number" id="pos-discount-input" min="0" value="0" step="1">
+                    </div>
+                    <div class="total-row">
+                        <span id="pos-tax-title">GST (18%)</span>
+                        <span id="pos-tax-val">Rs. 0.00</span>
+                    </div>
+                    <div class="total-row grand-total">
+                        <span>GRAND TOTAL</span>
+                        <span id="pos-grand-total">Rs. 0.00</span>
+                    </div>
+                </div>
+
+                <!-- Checkout Trigger Actions -->
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 10px; margin-top: 15px;">
+                    <button class="btn btn-danger" id="pos-clear-cart-btn">Clear Cart</button>
+                    <button class="btn btn-success" id="pos-checkout-btn" style="font-weight: 700;">PAY & CHECKOUT</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

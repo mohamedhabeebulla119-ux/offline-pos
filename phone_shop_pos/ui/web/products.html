@@ -1,0 +1,43 @@
+<!-- ui/web/products.html -->
+<div class="animated-page">
+    <div class="page-header">
+        <div class="page-title">
+            <h1>Products Catalog</h1>
+            <p>Manage devices inventory stock, categories, and serial barcodes</p>
+        </div>
+        <button class="btn btn-primary admin-only" id="add-product-modal-btn">
+            + Add Product
+        </button>
+    </div>
+
+    <!-- Search & Filter Controls -->
+    <div class="glass-card" style="padding: 15px; display: flex; justify-content: space-between; align-items: center; gap: 15px;">
+        <div style="display: flex; gap: 10px; flex-grow: 1;">
+            <input type="text" id="product-search-input" class="form-control" placeholder="Search by name, brand, category, or barcode..." style="flex-grow: 1; max-width: 500px;">
+        </div>
+        <button class="btn btn-secondary" id="product-reset-btn">Reset Filters</button>
+    </div>
+
+    <!-- Data Table Card -->
+    <div class="glass-card" style="flex-grow: 1;">
+        <div class="table-responsive">
+            <table class="data-table" id="products-table">
+                <thead>
+                    <tr>
+                        <th>Barcode</th>
+                        <th>Brand</th>
+                        <th>Product Model</th>
+                        <th>Category</th>
+                        <th>Stock Qty</th>
+                        <th>Purchase Cost</th>
+                        <th>Selling Price</th>
+                        <th class="admin-only" style="width: 150px; text-align: center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Injected via app.js -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,80 @@
+<!-- ui/web/dashboard.html -->
+<div class="animated-page">
+    <div class="page-header">
+        <div class="page-title">
+            <h1 id="dashboard-welcome">Dashboard Overview</h1>
+            <p>Real-time shop metrics & analytics summary</p>
+        </div>
+        <div class="btn btn-secondary" id="refresh-dashboard-btn">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+            Refresh Metrics
+        </div>
+    </div>
+
+    <!-- 1. Metrics KPI Grid -->
+    <div class="metrics-grid" style="margin-top: 15px;">
+        <div class="glass-card metric-card success">
+            <span class="metric-label">Today's Revenue</span>
+            <span class="metric-value" id="kpi-today-revenue">Rs. 0.00</span>
+            <div class="metric-trend" style="color: var(--success);">
+                <span>▲ Today's checkouts register</span>
+            </div>
+        </div>
+        <div class="glass-card metric-card">
+            <span class="metric-label">Monthly Revenue</span>
+            <span class="metric-value" id="kpi-month-revenue">Rs. 0.00</span>
+            <div class="metric-trend" style="color: var(--accent);">
+                <span>● Current Calendar Month</span>
+            </div>
+        </div>
+        <div class="glass-card metric-card success">
+            <span class="metric-label">Today's Transactions</span>
+            <span class="metric-value" id="kpi-today-sales">0 sales</span>
+            <div class="metric-trend" style="color: var(--success);">
+                <span>✓ Completed checkouts</span>
+            </div>
+        </div>
+        <div class="glass-card metric-card warning">
+            <span class="metric-label">Total Stock Items</span>
+            <span class="metric-value" id="kpi-total-stock">0 units</span>
+            <div class="metric-trend" style="color: var(--warning);">
+                <span>⚠ In-stock products sum</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Charts and Tables Splits -->
+    <div class="charts-grid" style="margin-top: 10px;">
+        <!-- Left: Sales Trend Line Chart -->
+        <div class="glass-card chart-card">
+            <div class="chart-header">
+                <span class="chart-title">Weekly Revenue Trend</span>
+                <span style="font-size: 0.8rem; color: var(--text-muted);">Last 7 Days</span>
+            </div>
+            <div class="chart-container">
+                <canvas id="weekly-trend-chart"></canvas>
+            </div>
+        </div>
+
+        <!-- Right: Low Stock Alerts -->
+        <div class="glass-card chart-card">
+            <div class="chart-header">
+                <span class="chart-title" style="color: var(--danger);">Low Stock Alerts</span>
+                <span class="badge badge-danger" id="low-stock-count-badge">0 items</span>
+            </div>
+            <div class="table-responsive" style="margin-top: 10px; overflow-y: auto; flex-grow: 1;">
+                <table class="data-table" id="low-stock-table">
+                    <thead>
+                        <tr>
+                            <th>Product / Model</th>
+                            <th>Stock Left</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Injected via app.js -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

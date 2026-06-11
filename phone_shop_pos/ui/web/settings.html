@@ -1,0 +1,107 @@
+<!-- ui/web/settings.html -->
+<div class="animated-page">
+    <div class="page-header">
+        <div class="page-title">
+            <h1>Store Settings & Admin Panel</h1>
+            <p>Configure shop profile information, cashier user logins, and backup schemas</p>
+        </div>
+    </div>
+
+    <!-- Layout Splits: Shop Details Form / User Management -->
+    <div class="pos-container">
+        <!-- LEFT: Shop Metadata Form -->
+        <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between;">
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <span style="font-weight: 700; font-size: 1.15rem; display: block; margin-bottom: 5px;">
+                    Shop Configuration Profile
+                </span>
+                
+                <form id="settings-shop-form">
+                    <div class="form-group">
+                        <label for="settings-shop-name">Store Name *</label>
+                        <input type="text" id="settings-shop-name" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="settings-shop-phone">Contact Phone *</label>
+                        <input type="text" id="settings-shop-phone" class="form-control" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="settings-shop-email">Contact Email Address</label>
+                        <input type="email" id="settings-shop-email" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="settings-shop-tax">Sales GST Tax Rate (%) *</label>
+                        <input type="number" id="settings-shop-tax" class="form-control" min="0" step="0.1" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="settings-shop-address">Store Billing Address *</label>
+                        <textarea id="settings-shop-address" class="form-control" rows="3" required style="resize: none;"></textarea>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary" style="margin-top: 10px;">
+                        Save Shop Config
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- RIGHT: User Accounts Controls -->
+        <div class="glass-card" style="display: flex; flex-direction: column; justify-content: space-between; height: 100%;">
+            <div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <span style="font-weight: 700; font-size: 1.15rem;">Registered User Accounts</span>
+                    <button class="btn btn-primary" id="add-user-btn" style="padding: 6px 12px; font-size: 0.8rem;">+ Add User</button>
+                </div>
+                
+                <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                    <table class="data-table" id="settings-users-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Access Role</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Injected via app.js -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <button class="btn btn-danger" id="delete-user-btn" style="width: 100%; margin-top: 15px;">
+                Delete Selected User Account
+            </button>
+        </div>
+    </div>
+
+    <!-- BOTTOM ROW: Backup & Restore operations (Double Column layout) -->
+    <div class="charts-grid" style="margin-top: 10px;">
+        <div class="glass-card" style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 25px;">
+            <span style="font-weight: 700; font-size: 1.2rem; color: var(--success); display: block; margin-bottom: 10px;">
+                Database Export Backups
+            </span>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; max-width: 320px;">
+                Export all sales transactions history, products listings, device catalog databases, and customer listings to a single JSON backup.
+            </p>
+            <button class="btn btn-success" id="backup-export-btn" style="font-weight: 700; width: 220px;">
+                EXPORT DATABASE DATA
+            </button>
+        </div>
+
+        <div class="glass-card" style="display: flex; flex-direction: column; align-items: center; text-align: center; padding: 25px;">
+            <span style="font-weight: 700; font-size: 1.2rem; color: var(--danger); display: block; margin-bottom: 10px;">
+                Database Imports / Restore
+            </span>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; max-width: 320px;">
+                Import configurations and data from a JSON file. WARNING: This action will completely erase and overwrite all current SQLite tables.
+            </p>
+            <button class="btn btn-danger" id="backup-import-btn" style="font-weight: 700; width: 220px;">
+                RESTORE FROM FILE
+            </button>
+        </div>
+    </div>
+</div>

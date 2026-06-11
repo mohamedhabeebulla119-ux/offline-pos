@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Shop POS - Modern Terminal</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <!-- Load Chart.js for data visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Load Qt WebChannel API -->
+    <script src="qrc:///qtwebchannel/qwebchannel.js"></script>
+</head>
+<body>
+
+    <!-- 1. LOGIN SCREEN OVERLAY (Visually shown by default until authenticated) -->
+    <div id="login-screen" class="login-screen">
+        <div class="glass-card login-card">
+            <div class="login-logo">P</div>
+            <h2>Phone Shop POS</h2>
+            <p>Offline Billing & Inventory Terminal</p>
+            
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" class="form-control" placeholder="Enter username" required autofocus autocomplete="username">
+                </div>
+                
+                <div class="form-group" style="margin-bottom: 25px;">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" placeholder="Enter password" required autocomplete="current-password">
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Sign In</button>
+            </form>
+            <div style="margin-top: 25px; font-size: 0.75rem; color: var(--text-muted);">
+                System Version v1.0 • Offline Terminal Mode
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. MAIN APPLICATION WORKSPACE -->
+    <div id="app-container" style="display: none;">
+        <!-- Left Sidebar Navigation -->
+        <aside>
+            <div>
+                <div class="brand-section">
+                    <div class="brand-logo">P</div>
+                    <span class="brand-name">PhonePOS</span>
+                </div>
+                
+                <ul class="nav-menu">
+                    <li>
+                        <a class="nav-item active" data-page="dashboard">
+                            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="9" rx="1"></rect><rect x="14" y="3" width="7" height="5" rx="1"></rect><rect x="14" y="12" width="7" height="9" rx="1"></rect><rect x="3" y="16" width="7" height="5" rx="1"></rect></svg>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <a class="nav-item" data-page="billing">
+                            <svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"></rect><line x1="12" y1="4" x2="12" y2="20"></line><line x1="2" y1="12" x2="22" y2="12"></line></svg>
+                            Billing / POS
+                        </a>
+                    </li>
+                    <li>
+                        <a class="nav-item" data-page="products">
+                            <svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                            Products Catalog
+                        </a>
+                    </li>
+                    <li>
+                        <a class="nav-item" data-page="inventory">
+                            <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                            Stock Adjustments
+                        </a>
+                    </li>
+                    <li>
+                        <a class="nav-item" data-page="customers">
+                            <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                            Customers Registry
+                        </a>
+                    </li>
+                    <li class="admin-only">
+                        <a class="nav-item" data-page="reports">
+                            <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg>
+                            Profit Reports
+                        </a>
+                    </li>
+                    <li class="admin-only">
+                        <a class="nav-item" data-page="settings">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                            Store Settings
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <span id="display-username" class="user-name">Admin</span>
+                    <span id="display-role" class="user-role">ADMINISTRATOR</span>
+                </div>
+                <button id="sidebar-logout" class="logout-btn" title="Sign Out">
+                    <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2.5" fill="none"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
+            </div>
+        </aside>
+
+        <!-- Right Main View Render Window -->
+        <main id="content-area" class="main-content">
+            <!-- Child pages HTML are loaded dynamically inside this container via app.js -->
+        </main>
+    </div>
+
+    <!-- 3. TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container"></div>
+
+    <!-- 4. MODAL DIALOG CONTAINER (Exposes custom models dynamically) -->
+    <div id="global-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-title">Modal Title</h3>
+                <button id="modal-close-btn" class="modal-close">&times;</button>
+            </div>
+            <div id="modal-body" class="modal-body">
+                <!-- Modal body generated dynamically -->
+            </div>
+            <div id="modal-footer" class="modal-footer">
+                <!-- Modal actions generated dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Load JavaScript Router & Controller -->
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
