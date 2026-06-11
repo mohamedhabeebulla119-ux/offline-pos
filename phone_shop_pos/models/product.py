@@ -105,6 +105,144 @@ class Product:
             self.db.rollback()
             return False
 
+    def generate_next_barcode(self):
+        """Reads latest product barcode and generates the next increment."""
+        try:
+            cursor = self.db.get_cursor()
+            cursor.execute("SELECT barcode FROM products WHERE barcode LIKE 'PS%' ORDER BY id DESC LIMIT 1;")
+            row = cursor.fetchone()
+            if row:
+                latest = row[0]
+                try:
+                    num_part = int(latest[2:])
+                    next_num = num_part + 1
+                except (ValueError, IndexError):
+                    next_num = 1
+            else:
+                next_num = 1
+            return f"PS{str(next_num).zfill(6)}"
+        except Exception as e:
+            print(f"Error in generate_next_barcode: {e}")
+            return "PS000001"
+
+    def is_barcode_unique(self, barcode_val):
+        """Checks if the barcode is unique in the products table."""
+        try:
+            cursor = self.db.get_cursor()
+            cursor.execute("SELECT COUNT(*) FROM products WHERE barcode = ?;", (barcode_val,))
+            count = cursor.fetchone()[0]
+            return count == 0
+        except Exception:
+            return False
+
+    def generate_unique_barcode(self):
+        """Generates a guaranteed unique barcode by incrementing."""
+        barcode_val = self.generate_next_barcode()
+        while not self.is_barcode_unique(barcode_val):
+            try:
+                num_part = int(barcode_val[2:])
+                barcode_val = f"PS{str(num_part + 1).zfill(6)}"
+            except Exception:
+                barcode_val = "PS000001"
+        return barcode_val
+
+    def create_product_with_barcode(self, brand, product_name, category, purchase_price, selling_price, quantity):
+        """
+        Creates a new product with an automatically generated unique barcode of format PSXXXXXX.
+        Generates the barcode PNG image file automatically.
+        Uses a single transaction and rolls back on failure.
+        
+        Returns:
+            dict: Success status, product_id, generated barcode, and image path or failure message.
+        """
+        try:
+            barcode_val = self.generate_unique_barcode()
+            cursor = self.db.get_cursor()
+            
+            # Insert product
+            query = """
+            INSERT INTO products (barcode, product_name, brand, category, purchase_price, selling_price, quantity)
+            VALUES (?, ?, ?, ?, ?, ?, ?);
+            """
+            cursor.execute(query, (barcode_val, product_name.strip(), brand.strip(), category.strip(),
+                                   purchase_price, selling_price, quantity))
+            product_id = cursor.lastrowid
+            
+            # Log initial stock history
+            history_query = """
+            INSERT INTO stock_history (product_id, previous_qty, new_qty, action_type)
+            VALUES (?, 0, ?, 'Initial Catalog Entry');
+            """
+            cursor.execute(history_query, (product_id, quantity))
+            
+            # Generate PNG barcode image
+            from services.barcode_service import BarcodeService
+            barcode_srv = BarcodeService()
+            success, img_path = barcode_srv.create_barcode(barcode_val)
+            if not success:
+                raise Exception(f"Failed to generate barcode image: {img_path}")
+                
+            self.db.commit()
+            
+            return {
+                "success": True,
+                "product_id": product_id,
+                "barcode": barcode_val,
+                "barcode_image": f"barcodes/{barcode_val}.png"
+            }
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error creating product with barcode: {e}")
+            return {
+                "success": False,
+                "message": str(e)
+            }
+
+    def regenerate_barcode(self, product_id):
+        """
+        Generates a new barcode for an existing product.
+        Updates the database, generates the new PNG, and deletes the old PNG.
+        Uses a single transaction.
+        
+        Returns:
+            dict: success status, new barcode, and image path or error message.
+        """
+        try:
+            product = self.get_product_by_id(product_id)
+            if not product:
+                return {"success": False, "message": "Product not found."}
+                
+            old_barcode = product[1]
+            new_barcode = self.generate_unique_barcode()
+            
+            cursor = self.db.get_cursor()
+            cursor.execute("UPDATE products SET barcode = ? WHERE id = ?;", (new_barcode, product_id))
+            
+            # Generate new PNG
+            from services.barcode_service import BarcodeService
+            barcode_srv = BarcodeService()
+            success, img_path = barcode_srv.create_barcode(new_barcode)
+            if not success:
+                raise Exception(f"Failed to generate barcode image: {img_path}")
+                
+            # Delete old PNG if it exists
+            barcode_srv.delete_barcode(old_barcode)
+            
+            self.db.commit()
+            
+            return {
+                "success": True,
+                "barcode": new_barcode,
+                "barcode_image": f"barcodes/{new_barcode}.png"
+            }
+        except Exception as e:
+            self.db.rollback()
+            print(f"Error in regenerate_barcode: {e}")
+            return {
+                "success": False,
+                "message": str(e)
+            }
+
     def get_all_products(self):
         """
         Retrieves all products from the database, sorted by product_name ASC.

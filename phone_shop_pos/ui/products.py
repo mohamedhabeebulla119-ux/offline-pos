@@ -63,28 +63,29 @@ class ProductsFrame(tk.Frame):
         table_frame = tk.Frame(self, bg=THEME['bg_main'])
         table_frame.pack(fill='both', expand=True)
         
-        self.tree = ttk.Treeview(table_frame, columns=("sku", "name", "category", "cost", "price", "margin", "stock"), show="headings", height=12)
-        self.tree.heading("sku", text="Barcode / SKU")
-        self.tree.heading("name", text="Product / Brand & Model")
+        self.tree = ttk.Treeview(table_frame, columns=("barcode", "brand", "name", "category", "qty", "cost", "price"), show="headings", height=12)
+        self.tree.heading("barcode", text="Barcode")
+        self.tree.heading("brand", text="Brand")
+        self.tree.heading("name", text="Product Name")
         self.tree.heading("category", text="Category")
-        self.tree.heading("cost", text="Purchase Cost")
+        self.tree.heading("qty", text="Qty")
+        self.tree.heading("cost", text="Purchase Price")
         self.tree.heading("price", text="Selling Price")
-        self.tree.heading("margin", text="Margin")
-        self.tree.heading("stock", text="Stock")
         
-        self.tree.column("sku", width=120, anchor='center')
-        self.tree.column("name", width=220, anchor='w')
+        self.tree.column("barcode", width=110, anchor='center')
+        self.tree.column("brand", width=110, anchor='w')
+        self.tree.column("name", width=180, anchor='w')
         self.tree.column("category", width=90, anchor='center')
-        self.tree.column("cost", width=90, anchor='e')
-        self.tree.column("price", width=90, anchor='e')
-        self.tree.column("margin", width=90, anchor='e')
-        self.tree.column("stock", width=80, anchor='center')
+        self.tree.column("qty", width=70, anchor='center')
+        self.tree.column("cost", width=100, anchor='e')
+        self.tree.column("price", width=100, anchor='e')
 
         sb = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=sb.set)
         
         self.tree.pack(side='left', fill='both', expand=True)
         sb.pack(side='right', fill='y')
+        self.tree.bind("<Button-3>", self.show_context_menu)
 
         # Controls panel below table
         controls = tk.Frame(self, bg=THEME['bg_main'])
@@ -114,12 +115,10 @@ class ProductsFrame(tk.Frame):
                 continue
                 
             stock = Product.get_stock(p.id)
-            margin = p.selling_price - p.purchase_price
-            margin_percent = f"{(margin/p.purchase_price)*100:.0f}%" if p.purchase_price > 0 else "0%"
             
             self.tree.insert(
                 "", "end", iid=p.id, 
-                values=(p.barcode, name, p.category, f"Rs. {p.purchase_price:.2f}", f"Rs. {p.selling_price:.2f}", f"Rs. {margin:.2f} ({margin_percent})", f"{stock} units")
+                values=(p.barcode, p.brand, p.product_name, p.category, f"{stock} units", f"Rs. {p.purchase_price:.2f}", f"Rs. {p.selling_price:.2f}")
             )
 
     def clear_filters(self):
@@ -134,8 +133,7 @@ class ProductsFrame(tk.Frame):
         p_id = int(selected)
         p = Product.get_by_id(p_id)
         if p:
-            BarcodeService.print_barcode(p.barcode)
-            messagebox.showinfo("Success", f"Label file barcodes/{p.barcode}.svg opened.")
+            self.run_pyqt6_print(p.barcode, f"{p.brand} {p.product_name}", p.selling_price, f"barcodes/{p.barcode}.png")
 
     def delete_selected(self):
         selected = self.tree.focus()
@@ -174,12 +172,15 @@ class ProductsFrame(tk.Frame):
         tk.Label(modal, text="Product Information", bg=THEME['bg_card'], fg=THEME['text_main'], font=("Helvetica", 14, "bold")).pack(pady=15)
 
         # Fields
-        tk.Label(modal, text="Barcode / Unique Serial Code *", bg=THEME['bg_card'], fg=THEME['text_muted'], font=("Helvetica", 9, "bold")).pack(anchor='w', padx=25)
+        tk.Label(modal, text="Barcode", bg=THEME['bg_card'], fg=THEME['text_muted'], font=("Helvetica", 9, "bold")).pack(anchor='w', padx=25)
         ent_sku = tk.Entry(modal, bg='#090D16', fg='#ffffff', insertbackground='#ffffff', font=("Helvetica", 11), bd=0, highlightthickness=1, highlightbackground=THEME['border'])
         ent_sku.pack(fill='x', ipady=5, padx=25, pady=(4, 10))
         if is_edit:
             ent_sku.insert(0, product.barcode)
             ent_sku.config(state='disabled')
+        else:
+            ent_sku.insert(0, "[AUTO GENERATED AFTER SAVE]")
+            ent_sku.config(state='disabled', fg=THEME['text_muted'])
 
         tk.Label(modal, text="Brand Name *", bg=THEME['bg_card'], fg=THEME['text_muted'], font=("Helvetica", 9, "bold")).pack(anchor='w', padx=25)
         ent_brand = tk.Entry(modal, bg='#090D16', fg='#ffffff', insertbackground='#ffffff', font=("Helvetica", 11), bd=0, highlightthickness=1, highlightbackground=THEME['border'])
@@ -209,7 +210,7 @@ class ProductsFrame(tk.Frame):
         ent_qty.pack(fill='x', ipady=5, pady=(4, 0))
         ent_qty.insert(0, str(product.quantity) if is_edit else "0")
         if is_edit:
-            ent_qty.config(state='disabled') # Adjustments only via inventory panel
+            ent_qty.config(state='disabled')
 
         # Cost and Price row
         prices_frame = tk.Frame(modal, bg=THEME['bg_card'])
@@ -230,7 +231,6 @@ class ProductsFrame(tk.Frame):
         if is_edit: ent_price.insert(0, str(product.selling_price))
 
         def save():
-            sku = ent_sku.get().strip()
             brand = ent_brand.get().strip()
             model = ent_model.get().strip()
             cat = cb_cat.get()
@@ -238,7 +238,7 @@ class ProductsFrame(tk.Frame):
             price_str = ent_price.get().strip()
             qty_str = ent_qty.get().strip()
             
-            if not sku or not brand or not model or not cost_str or not price_str or not qty_str:
+            if not brand or not model or not cost_str or not price_str or not qty_str:
                 messagebox.showwarning("Validation Error", "All fields marked with (*) are required.", parent=modal)
                 return
                 
@@ -268,15 +268,189 @@ class ProductsFrame(tk.Frame):
                 else:
                     messagebox.showerror("Error", "Failed to update product details.", parent=modal)
             else:
-                new_p = Product(barcode=sku, product_name=model, brand=brand, category=cat, purchase_price=c, selling_price=p, quantity=q)
-                if new_p.save():
-                    messagebox.showinfo("Success", f"Product '{brand} {model}' saved successfully.", parent=modal)
+                prod_mgr = Product()
+                res = prod_mgr.create_product_with_barcode(
+                    brand=brand,
+                    product_name=model,
+                    category=cat,
+                    purchase_price=c,
+                    selling_price=p,
+                    quantity=q
+                )
+                if res.get("success"):
+                    barcode_val = res["barcode"]
+                    barcode_img = res["barcode_image"]
                     modal.destroy()
                     self.refresh()
+                    self.show_save_success_dialog(brand, model, p, barcode_val, barcode_img)
                 else:
-                    messagebox.showerror("Error", f"Barcode / IMEI '{sku}' already exists inside the database.", parent=modal)
+                    messagebox.showerror("Error", f"Failed to save product: {res.get('message')}", parent=modal)
 
         make_hover_btn(modal, "SAVE DETAILS", THEME['primary'], '#ffffff', save, width=20).pack(pady=10)
+
+    def show_save_success_dialog(self, brand, model, price, barcode_val, barcode_img):
+        """Displays success modal after automatic barcode generation."""
+        success_modal = tk.Toplevel(self, bg=THEME['bg_card'])
+        success_modal.title("Success")
+        success_modal.geometry("420x300")
+        success_modal.resizable(False, False)
+        success_modal.transient(self)
+        success_modal.grab_set()
+
+        tk.Label(success_modal, text="Product Saved Successfully", bg=THEME['bg_card'], fg=THEME['success'], font=("Helvetica", 14, "bold")).pack(pady=15)
+
+        details_frame = tk.Frame(success_modal, bg=THEME['bg_card'])
+        details_frame.pack(pady=10)
+
+        tk.Label(details_frame, text=f"Product: {brand} {model}", bg=THEME['bg_card'], fg=THEME['text_main'], font=("Helvetica", 10)).pack(anchor='w')
+        tk.Label(details_frame, text=f"Barcode: {barcode_val}", bg=THEME['bg_card'], fg=THEME['text_main'], font=("Helvetica", 11, "bold")).pack(anchor='w', pady=5)
+        tk.Label(details_frame, text=f"Barcode Image: {barcode_img}", bg=THEME['bg_card'], fg=THEME['text_muted'], font=("Helvetica", 9)).pack(anchor='w')
+
+        btn_frame = tk.Frame(success_modal, bg=THEME['bg_card'])
+        btn_frame.pack(pady=20)
+
+        make_hover_btn(btn_frame, "Preview Barcode", THEME['primary'], '#ffffff', lambda: self.show_barcode_preview(brand, model, barcode_val, barcode_img), width=15).pack(side='left', padx=5)
+        make_hover_btn(btn_frame, "Print Barcode", THEME['primary'], '#ffffff', lambda: self.run_pyqt6_print(barcode_val, f"{brand} {model}", price, barcode_img), width=15).pack(side='left', padx=5)
+        make_hover_btn(btn_frame, "Close", THEME['bg_main'], THEME['text_main'], success_modal.destroy, width=10).pack(side='left', padx=5)
+
+    def show_barcode_preview(self, brand, model, barcode_val, barcode_img):
+        """Presents barcode preview modal with image display."""
+        import os
+        from PIL import Image, ImageTk
+        
+        preview_modal = tk.Toplevel(self, bg='#ffffff')
+        preview_modal.title(f"Barcode Preview: {barcode_val}")
+        preview_modal.geometry("400x300")
+        preview_modal.resizable(False, False)
+        preview_modal.transient(self)
+        preview_modal.grab_set()
+
+        tk.Label(preview_modal, text=f"{brand} {model}", bg='#ffffff', fg='#1E293B', font=("Helvetica", 12, "bold")).pack(pady=(15, 5))
+
+        try:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            img_path = os.path.join(base_dir, barcode_img)
+            if not os.path.exists(img_path):
+                img_path = barcode_img
+                
+            img = Image.open(img_path)
+            img = img.resize((300, 100), Image.Resampling.LANCZOS)
+            photo = ImageTk.PhotoImage(img)
+            
+            img_label = tk.Label(preview_modal, image=photo, bg='#ffffff')
+            img_label.image = photo
+            img_label.pack(pady=10)
+        except Exception as e:
+            tk.Label(preview_modal, text=f"[Image Load Error: {e}]", bg='#ffffff', fg='#EF4444').pack(pady=10)
+
+        tk.Label(preview_modal, text=barcode_val, bg='#ffffff', fg='#1E293B', font=("Courier", 12, "bold")).pack(pady=5)
+
+        btn_close = tk.Button(preview_modal, text="Close", command=preview_modal.destroy, bg='#F1F5F9', fg='#475569', font=("Helvetica", 10, "bold"), bd=0, padx=15, pady=5, cursor="hand2")
+        btn_close.pack(pady=15)
+
+    def run_pyqt6_print(self, barcode_val, product_name, price, barcode_img):
+        """Uses PyQt6 to execute printer sticker layout page printing."""
+        import os
+        try:
+            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            img_path = os.path.join(base_dir, barcode_img)
+            if not os.path.exists(img_path):
+                img_path = barcode_img
+                
+            if not os.path.exists(img_path):
+                messagebox.showerror("Error", f"Barcode image not found: {img_path}")
+                return
+
+            from PyQt6.QtWidgets import QApplication
+            from PyQt6.QtPrintSupport import QPrinter, QPrintDialog
+            from PyQt6.QtGui import QPainter, QPixmap, QFont
+            from PyQt6.QtCore import QRectF, QPointF, Qt
+
+            app = QApplication.instance()
+            if not app:
+                app = QApplication([])
+
+            printer = QPrinter(QPrinter.PrinterMode.HighResolution)
+            dialog = QPrintDialog(printer)
+            if dialog.exec() == QPrintDialog.DialogCode.Accepted:
+                painter = QPainter(printer)
+                page_rect = printer.pageRect(QPrinter.Unit.DevicePixel)
+                width = page_rect.width()
+                
+                # Title
+                font_title = QFont("Arial", 10, QFont.Weight.Bold)
+                painter.setFont(font_title)
+                painter.drawText(QRectF(10, 10, width - 20, 30), Qt.AlignmentFlag.AlignCenter, product_name)
+
+                # Image
+                pixmap = QPixmap(img_path)
+                scaled_pixmap = pixmap.scaledToWidth(int(width * 0.8), Qt.TransformationMode.SmoothTransformation)
+                x = (width - scaled_pixmap.width()) / 2
+                y = 45
+                painter.drawPixmap(QPointF(x, y), scaled_pixmap)
+
+                # Text Code
+                font_text = QFont("Arial", 8)
+                painter.setFont(font_text)
+                y_text = y + scaled_pixmap.height() + 10
+                painter.drawText(QRectF(10, y_text, width - 20, 20), Qt.AlignmentFlag.AlignCenter, barcode_val)
+
+                # Price Label
+                font_price = QFont("Arial", 10, QFont.Weight.Bold)
+                painter.setFont(font_price)
+                y_price = y_text + 20
+                painter.drawText(QRectF(10, y_price, width - 20, 30), Qt.AlignmentFlag.AlignCenter, f"Price: Rs. {price:.2f}")
+
+                painter.end()
+                messagebox.showinfo("Success", f"Sticker label for {product_name} printed.")
+        except Exception as e:
+            messagebox.showerror("Print Error", f"PyQt6 print failed: {e}")
+
+    def show_context_menu(self, event):
+        """Popup menu display for right click operations."""
+        item = self.tree.identify_row(event.y)
+        if item:
+            self.tree.focus(item)
+            self.tree.selection_set(item)
+            
+            menu = tk.Menu(self, tearoff=0, bg=THEME['bg_card'], fg=THEME['text_main'])
+            menu.add_command(label="Preview Barcode", command=self.preview_selected)
+            menu.add_command(label="Print Barcode", command=self.print_selected)
+            if self.user_data['role'] == 'admin':
+                menu.add_command(label="Regenerate Barcode", command=self.regenerate_selected_barcode)
+                
+            menu.post(event.x_root, event.y_root)
+
+    def preview_selected(self):
+        selected = self.tree.focus()
+        if not selected: return
+        p_id = int(selected)
+        p = Product.get_by_id(p_id)
+        if p:
+            self.show_barcode_preview(p.brand, p.product_name, p.barcode, f"barcodes/{p.barcode}.png")
+
+    def print_selected(self):
+        selected = self.tree.focus()
+        if not selected: return
+        p_id = int(selected)
+        p = Product.get_by_id(p_id)
+        if p:
+            self.run_pyqt6_print(p.barcode, f"{p.brand} {p.product_name}", p.selling_price, f"barcodes/{p.barcode}.png")
+
+    def regenerate_selected_barcode(self):
+        selected = self.tree.focus()
+        if not selected: return
+        p_id = int(selected)
+        p = Product.get_by_id(p_id)
+        if p:
+            if messagebox.askyesno("Regenerate Barcode", f"Are you sure you want to generate a new barcode for {p.brand} {p.product_name}?\nThis will delete the old PNG and assign a new barcode ID."):
+                res = Product().regenerate_barcode(p_id)
+                if res.get("success"):
+                    new_barcode = res["barcode"]
+                    messagebox.showinfo("Success", f"Barcode regenerated successfully.\nNew Barcode: {new_barcode}")
+                    self.refresh()
+                else:
+                    messagebox.showerror("Error", f"Failed to regenerate barcode: {res.get('message')}")
 
 
 class InventoryFrame(tk.Frame):

@@ -86,7 +86,7 @@ class PhoneShopApp(tk.Tk):
 
     def init_directories(self):
         """Creates output folders if they do not exist."""
-        folders = ['barcodes', 'receipts', 'backups']
+        folders = ['barcodes', 'receipts', 'reports', 'backups']
         for f in folders:
             if not os.path.exists(f):
                 os.makedirs(f)
