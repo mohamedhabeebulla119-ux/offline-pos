@@ -1312,15 +1312,20 @@ function refreshInventoryLogsTable() {
             res.logs.forEach(log => {
                 const tr = document.createElement("tr");
                 let badgeClass = "badge-info";
-                if (log.type.toLowerCase() === 'in' || log.type.toLowerCase() === 'sale_cancelled' || log.type.toLowerCase() === 'available') badgeClass = "badge-success";
-                if (log.type.toLowerCase() === 'out' || log.type.toLowerCase() === 'sale' || log.type.toLowerCase() === 'sold') badgeClass = "badge-danger";
+                const logType = (log.type || log.status || "").toLowerCase();
+                const logDate = log.date || log.added_date || "";
+                const logQty = log.quantity !== undefined ? log.quantity : 1;
+                const logReason = log.reason || (log.status === 'available' ? 'Available Device' : (log.status === 'sold' ? `Sold via Invoice ${log.sale_id || ''}` : ''));
+
+                if (logType === 'in' || logType === 'sale_cancelled' || logType === 'available') badgeClass = "badge-success";
+                if (logType === 'out' || logType === 'sale' || logType === 'sold') badgeClass = "badge-danger";
                 
                 tr.innerHTML = `
-                    <td style="font-size:0.8rem; text-align:center;">${log.date.substring(0, 16)}</td>
+                    <td style="font-size:0.8rem; text-align:center;">${logDate.substring(0, 16)}</td>
                     <td><span style="font-weight:600;">${log.brand}</span> ${log.model}</td>
-                    <td style="text-align:center;"><span class="badge ${badgeClass}">${log.type}</span></td>
-                    <td style="text-align:center; font-weight:bold;">${log.quantity}</td>
-                    <td style="font-size:0.85rem; color:var(--text-muted);">${log.reason}</td>
+                    <td style="text-align:center;"><span class="badge ${badgeClass}">${logType}</span></td>
+                    <td style="text-align:center; font-weight:bold;">${logQty}</td>
+                    <td style="font-size:0.85rem; color:var(--text-muted);">${logReason}</td>
                 `;
                 
                 // Double click IMEI details lookup
