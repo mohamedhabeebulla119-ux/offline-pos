@@ -1,0 +1,9 @@
+.venv/
+__pycache__/
+*.pyc
+phone_shop_pos/phone_shop.db
+phone_shop_pos/barcodes/
+phone_shop_pos/receipts/
+phone_shop_pos/backups/
+.idea/
+.vscode/

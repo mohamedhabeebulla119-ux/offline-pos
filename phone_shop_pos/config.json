@@ -1,0 +1,8 @@
+{
+  "shopName": "Offline Phone Shop",
+  "shopAddress": "123 Phone Plaza, Main Road",
+  "shopPhone": "+91 9876543210",
+  "shopEmail": "contact@phoneshop.com",
+  "taxRate": 18.0,
+  "printerWidth": "80mm"
+}
