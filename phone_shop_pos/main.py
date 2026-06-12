@@ -22,6 +22,72 @@ from services.billing_service import BillingService
 from services.report_service import ReportService
 from ui.login import create_default_admin_if_empty
 
+# ── Patch BillingService receipt to strip the GST line ──────────────────────
+_original_save_receipt = BillingService.save_text_receipt
+
+@staticmethod
+def _patched_save_text_receipt(invoice_number, date_str, cart_items, subtotal,
+                               discount, tax, total, payment_method,
+                               customer_id, cashier):
+    """Writes a plain-text receipt without a GST line."""
+    folder = "receipts"
+    if not os.path.exists(folder):
+        os.makedirs(folder)
+    settings = BillingService.get_shop_settings()
+    shop_name = settings.get('shopName', 'Phone Shop')
+    shop_addr = settings.get('shopAddress', 'Store Address')
+    shop_phone = settings.get('shopPhone', 'Phone Number')
+
+    cust_info = "Customer: Walk-in Guest"
+    if customer_id:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT customer_name as name, phone FROM customers WHERE id = ?;", (customer_id,))
+        c = cursor.fetchone()
+        conn.close()
+        if c:
+            cust_info = f"Customer: {c['name']}\nPhone: {c['phone']}"
+
+    receipt = []
+    receipt.append("=" * 40)
+    receipt.append(shop_name.center(40))
+    receipt.append(shop_addr.center(40))
+    receipt.append(f"Phone: {shop_phone}".center(40))
+    receipt.append("=" * 40)
+    receipt.append(f"Invoice: {invoice_number}")
+    receipt.append(f"Date: {date_str}")
+    receipt.append(f"Cashier: {cashier}")
+    receipt.append(cust_info)
+    receipt.append("-" * 40)
+
+    for item in cart_items:
+        prod = item['product']
+        name = f"{prod.brand} {prod.product_name}"
+        receipt.append(f"{name:<28} {item['quantity']:>3}x")
+        receipt.append(f"  @{item['price']:<15.2f} Total: {item['price'] * item['quantity']:>15.2f}")
+        if item.get('imeis'):
+            receipt.append(f"  IMEI(s): {', '.join(item['imeis'])}")
+
+    receipt.append("-" * 40)
+    receipt.append(f"Subtotal: {subtotal:>30.2f}")
+    if discount > 0:
+        receipt.append(f"Discount: -{discount:>29.2f}")
+    # GST line intentionally omitted
+    receipt.append("=" * 40)
+    receipt.append(f"GRAND TOTAL: {total:>27.2f}")
+    receipt.append(f"Payment Mode: {payment_method:>26}")
+    receipt.append("=" * 40)
+    receipt.append("Thank you for your purchase!".center(40))
+    receipt.append("Please preserve invoice for warranty.".center(40))
+    receipt.append("=" * 40)
+
+    filepath = os.path.join(folder, f"{invoice_number}.txt")
+    with open(filepath, "w") as f:
+        f.write("\n".join(receipt))
+
+BillingService.save_text_receipt = _patched_save_text_receipt
+# ─────────────────────────────────────────────────────────────────────────────
+
 class BackendBridge(QObject):
     """
     Python-JS Bridge Object exposed to QWebEngineView via QWebChannel.
@@ -301,11 +367,95 @@ class BackendBridge(QObject):
             
         elif action == "create_invoice":
             customer_id = payload.get("customer_id")
-            cart_items = payload.get("cart_items")
+            cart_items_raw = payload.get("cart_items", [])
             discount = float(payload.get("discount", 0))
             pay_method = payload.get("payment_method")
-            res = BillingService().create_invoice(customer_id, cart_items, discount, pay_method)
-            return res
+
+            # Build checkout cart items with custom prices and product objects
+            checkout_cart = []
+            subtotal = 0.0
+            conn = get_connection()
+            cursor = conn.cursor()
+            try:
+                for ci in cart_items_raw:
+                    raw_pid = ci.get("product_id")
+                    qty = int(ci.get("quantity", 1))
+                    if qty <= 0:
+                        continue
+                    custom_price = float(ci.get("custom_price", 0) or 0)
+                    imeis = ci.get("imeis", []) or []
+
+                    # If product_id is missing (IMEI-linked device), look up by IMEI/barcode
+                    if raw_pid is None:
+                        if not imeis:
+                            continue  # nothing to look up
+                        barcode = imeis[0]
+                        cursor.execute(
+                            "SELECT id, barcode, product_name, brand, category, purchase_price, selling_price, quantity FROM products WHERE barcode = ?;",
+                            (barcode,)
+                        )
+                    else:
+                        p_id = int(raw_pid)
+                        cursor.execute(
+                            "SELECT id, barcode, product_name, brand, category, purchase_price, selling_price, quantity FROM products WHERE id = ?;",
+                            (p_id,)
+                        )
+                    row = cursor.fetchone()
+                    if not row:
+                        conn.close()
+                        return {"success": False, "message": f"Product ID {p_id} not found."}
+
+                    # Use custom price from cashier or fall back to stored selling price
+                    price = custom_price if custom_price > 0 else float(row[6])
+
+                    # Build a lightweight product-like object for BillingService.checkout
+                    class _Prod:
+                        pass
+                    prod_obj = _Prod()
+                    prod_obj.id = row[0]
+                    prod_obj.barcode = row[1]
+                    prod_obj.product_name = row[2]
+                    prod_obj.brand = row[3]
+                    prod_obj.category = row[4]
+                    prod_obj.purchase_price = row[5]
+                    prod_obj.selling_price = price
+
+                    item_total = price * qty
+                    subtotal += item_total
+                    checkout_cart.append({
+                        "product": prod_obj,
+                        "quantity": qty,
+                        "price": price,
+                        "imeis": imeis
+                    })
+            finally:
+                conn.close()
+
+
+            total = max(0.0, subtotal - discount)
+            cashier = "admin"
+            try:
+                from database.db import get_connection as _gc
+                _c = _gc()
+                _cr = _c.cursor()
+                # We pass username if available but it's not tracked in session here
+                _c.close()
+            except Exception:
+                pass
+
+            success, invoice_no = BillingService.checkout(
+                cart_items=checkout_cart,
+                subtotal=subtotal,
+                discount=discount,
+                tax=0.0,
+                total=total,
+                payment_method=pay_method,
+                customer_id=customer_id,
+                cashier="cashier"
+            )
+            if success:
+                return {"success": True, "invoice_no": invoice_no, "subtotal": subtotal, "discount": discount, "total": total}
+            return {"success": False, "message": "Checkout transaction failed. Please try again."}
             
         elif action == "reprint_receipt":
             invoice_no = payload.get("invoice_no")

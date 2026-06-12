@@ -315,11 +315,11 @@ function refreshPOSCatalog() {
         if (res.success) {
             catalogProducts = res.products;
             
-            // Fetch tax rates
+            // Fetch tax rates / shop settings (kept for other uses)
             callPython("get_settings", {}, function(settingsRes) {
                 if (settingsRes.success) {
                     shopSettings = settingsRes.settings;
-                    document.getElementById("pos-tax-title").innerText = `GST (${parseFloat(shopSettings.taxRate || 18.0)}%)`;
+                    // GST row is hidden; no update needed
                 }
                 
                 // Fetch Customers Combo listings
@@ -516,7 +516,20 @@ function renderBillingCart() {
                     <span class="cart-qty-val">${item.quantity}</span>
                     <button class="cart-qty-btn" ${item.imeis.length > 0 ? "disabled" : ""} onclick="adjustCartQty(${idx}, 1)">+</button>
                 </div>
-                <span class="cart-item-total">Rs. ${parseFloat(item.total_price).toFixed(2)}</span>
+                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:2px;">
+                    <input
+                        type="number"
+                        id="cart-price-input-${idx}"
+                        class="cart-price-input"
+                        min="0"
+                        step="1"
+                        value="${parseFloat(item.selling_price).toFixed(2)}"
+                        title="Edit sale price"
+                        oninput="updateCartItemPrice(${idx}, this.value)"
+                        style="width:90px; padding:4px 6px; border-radius:6px; border:1px solid var(--border); background:var(--bg-secondary); color:var(--text-primary); font-size:0.85rem; text-align:right;"
+                    />
+                    <span class="cart-item-total" id="cart-item-total-${idx}">Rs. ${parseFloat(item.total_price).toFixed(2)}</span>
+                </div>
                 <button class="cart-item-remove" onclick="removeCartItem(${idx})" title="Remove item">
                     &times;
                 </button>
@@ -553,17 +566,30 @@ window.removeCartItem = function(index) {
     showToast("Item removed from register cart", "warning");
 };
 
+window.updateCartItemPrice = function(index, rawValue) {
+    const price = parseFloat(rawValue);
+    if (isNaN(price) || price < 0) return;
+    const item = activeCart[index];
+    item.selling_price = price;
+    item.total_price = price * item.quantity;
+    // Update just the line-total span without re-rendering to preserve focus
+    const lineEl = document.getElementById(`cart-item-total-${index}`);
+    if (lineEl) lineEl.innerText = `Rs. ${item.total_price.toFixed(2)}`;
+    // Recalculate sidebar totals
+    const subtotal = activeCart.reduce((sum, i) => sum + i.total_price, 0);
+    const discVal = parseFloat(document.getElementById("pos-discount-input").value) || 0;
+    const total = Math.max(0.0, subtotal - discVal);
+    document.getElementById("pos-subtotal").innerText = `Rs. ${subtotal.toFixed(2)}`;
+    document.getElementById("pos-grand-total").innerText = `Rs. ${total.toFixed(2)}`;
+};
+
 function calculateBillingTotals() {
     const subtotal = activeCart.reduce((sum, item) => sum + item.total_price, 0);
     const discVal = parseFloat(document.getElementById("pos-discount-input").value) || 0;
-    
-    const taxRate = parseFloat(shopSettings.taxRate || 18.0);
-    const net = Math.max(0.0, subtotal - discVal);
-    const gst = net * (taxRate / 100.0);
-    const total = net + gst;
+    const total = Math.max(0.0, subtotal - discVal);
     
     document.getElementById("pos-subtotal").innerText = `Rs. ${subtotal.toFixed(2)}`;
-    document.getElementById("pos-tax-val").innerText = `Rs. ${gst.toFixed(2)}`;
+    document.getElementById("pos-tax-val").innerText = `Rs. 0.00`;
     document.getElementById("pos-grand-total").innerText = `Rs. ${total.toFixed(2)}`;
 }
 
@@ -624,10 +650,7 @@ function openCheckoutModal() {
     
     const subtotal = activeCart.reduce((sum, item) => sum + item.total_price, 0);
     const discVal = parseFloat(document.getElementById("pos-discount-input").value) || 0;
-    const taxRate = parseFloat(shopSettings.taxRate || 18.0);
-    const net = Math.max(0.0, subtotal - discVal);
-    const gst = net * (taxRate / 100.0);
-    const total = net + gst;
+    const total = Math.max(0.0, subtotal - discVal);
 
     const body = `
         <div class="form-group">
@@ -656,10 +679,14 @@ function openCheckoutModal() {
         const custSelect = document.getElementById("pos-customer-select").value;
         const customerId = custSelect ? parseInt(custSelect) : null;
         
-        // Format cart for backend Transaction
+        // Format cart for backend — include custom price, brand, model, and IMEIs
         const formattedCart = activeCart.map(item => ({
             product_id: item.product.id,
-            quantity: item.quantity
+            quantity: item.quantity,
+            custom_price: parseFloat(item.selling_price),
+            brand: item.product.brand,
+            product_name: item.product.product_name,
+            imeis: item.imeis || []
         }));
         
         closeModal();
